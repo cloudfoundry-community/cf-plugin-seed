@@ -1,0 +1,22 @@
+---
+organizations:
+  - name: org1
+    spaces:
+    - name: space1
+      apps:
+      - name: app1
+        repo: https://github.com/cloudfoundry-community/cf-env
+      - name: app2
+        path: apps/app1
+        memory: 256m
+        disk: 1g
+        instances: 2
+    - name: space2
+  - name: org2
+    spaces:
+      - name: space3
+        apps:
+          - name: app3
+            path: "blah"
+          - name: app4
+            path: "foo"
