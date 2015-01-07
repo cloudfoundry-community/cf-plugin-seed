@@ -5,7 +5,7 @@ Seed creates orgs, spaces, and pushes app. This plugin was created for automatio
 ## installation
 
 ```
-$ go get github.com/cloudfoundry-community/seed
+$ go get github.com/cloudfoundry-community/cf-plugin-seed
 $ cf install-plugin $GOPATH/bin/seed
 ```
 
