@@ -13,7 +13,7 @@ import (
 )
 
 //VERSION of seeder
-const VERSION = "0.0.1"
+const VERSION = "0.0.2"
 
 func fatalIf(err error) {
 	if err != nil {
@@ -45,6 +45,10 @@ func (plugin SeedPlugin) Run(cliConnection plugin.CliConnection, args []string) 
 		},
 	}
 	app.Action = func(c *cli.Context) {
+		if !c.IsSet("f") {
+			cli.ShowAppHelp(c)
+			os.Exit(1)
+		}
 		fileName := c.String("f")
 		seedRepo := NewSeedRepo(cliConnection, fileName)
 
@@ -66,7 +70,7 @@ func (plugin SeedPlugin) Run(cliConnection plugin.CliConnection, args []string) 
 //GetMetadata of plugin
 func (SeedPlugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "seed",
+		Name: "cf-plugin-seed",
 		Commands: []plugin.Command{
 			{
 				Name:     "seed",
