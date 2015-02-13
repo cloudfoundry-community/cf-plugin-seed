@@ -43,6 +43,10 @@ func (plugin SeedPlugin) Run(cliConnection plugin.CliConnection, args []string) 
 			Value: "",
 			Usage: "seed manifest for seeding Cloud Foundry",
 		},
+		cli.BoolFlag{
+			Name:  "c",
+			Usage: "cleanup all things created by the manifest",
+		},
 	}
 	app.Action = func(c *cli.Context) {
 		if !c.IsSet("f") {
@@ -55,14 +59,26 @@ func (plugin SeedPlugin) Run(cliConnection plugin.CliConnection, args []string) 
 		err := seedRepo.ReadManifest()
 		fatalIf(err)
 
-		err = seedRepo.CreateOrganizations()
-		fatalIf(err)
+		if c.Bool("c") {
+			err = seedRepo.DeleteApps()
 
-		err = seedRepo.CreateSpaces()
-		fatalIf(err)
+			fatalIf(err)
 
-		err = seedRepo.CreateApps()
-		fatalIf(err)
+			err = seedRepo.DeleteSpaces()
+			fatalIf(err)
+
+			err = seedRepo.DeleteOrganizations()
+			fatalIf(err)
+		} else {
+			err = seedRepo.CreateOrganizations()
+			fatalIf(err)
+
+			err = seedRepo.CreateSpaces()
+			fatalIf(err)
+
+			err = seedRepo.CreateApps()
+			fatalIf(err)
+		}
 	}
 	app.Run(args)
 }
@@ -119,11 +135,34 @@ func (repo *SeedRepo) CreateOrganizations() error {
 	return nil
 }
 
+func (repo *SeedRepo) DeleteOrganizations() error {
+	for _, org := range repo.Manifest.Organizations {
+		_, err := repo.conn.CliCommand("delete-org", org.Name, "-f")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (repo *SeedRepo) CreateSpaces() error {
 	for _, org := range repo.Manifest.Organizations {
 		repo.conn.CliCommand("target", "-o", org.Name)
 		for _, space := range org.Spaces {
 			_, err := repo.conn.CliCommand("create-space", space.Name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (repo *SeedRepo) DeleteSpaces() error {
+	for _, org := range repo.Manifest.Organizations {
+		repo.conn.CliCommand("target", "-o", org.Name)
+		for _, space := range org.Spaces {
+			_, err := repo.conn.CliCommand("delete-space", space.Name, "-f")
 			if err != nil {
 				return err
 			}
@@ -144,6 +183,32 @@ func (repo *SeedRepo) CreateApps() error {
 			}
 		}
 	}
+	return nil
+}
+
+func (repo *SeedRepo) DeleteApps() error {
+	for _, org := range repo.Manifest.Organizations {
+		for _, space := range org.Spaces {
+			repo.conn.CliCommand("target", "-o", org.Name, "-s", space.Name)
+			for _, app := range space.Apps {
+				err := repo.DeleteApp(app)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+//DeleteApp deletes a single app
+func (repo *SeedRepo) DeleteApp(app App) error {
+
+	_, err := repo.conn.CliCommand("delete", app.Name, "-f", "-r")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
