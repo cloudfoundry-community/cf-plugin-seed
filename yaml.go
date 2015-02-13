@@ -10,8 +10,9 @@ type Organization struct {
 }
 
 type Space struct {
-	Name string
-	Apps []App
+	Name     string
+	Apps     []App
+	Services []Service
 }
 
 type App struct {
@@ -24,4 +25,11 @@ type App struct {
 	Hostname  string `yaml:",omitempty"`
 	Domain    string `yaml:",omitempty"`
 	Buildpack string `yaml:",omitempty"`
+	Manifest  string `yaml:",omitempty"`
+}
+
+type Service struct {
+	Name    string
+	Service string `yaml:",omitempty"`
+	Plan    string `yaml:",omitempty"`
 }
