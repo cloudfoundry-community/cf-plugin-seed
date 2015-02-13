@@ -24,4 +24,5 @@ type App struct {
 	Hostname  string `yaml:",omitempty"`
 	Domain    string `yaml:",omitempty"`
 	Buildpack string `yaml:",omitempty"`
+	Manifest  string `yaml:",omitempty"`
 }

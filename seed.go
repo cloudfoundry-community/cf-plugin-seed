@@ -171,6 +171,8 @@ func (repo *SeedRepo) DeployApp(app App) error {
 
 	} else if app.Path != "" {
 		args = append(args, "-p", app.Path)
+	} else if app.Manifest != "" {
+		args = append(args, "-f", app.Manifest)
 	} else {
 		errMsg := fmt.Sprintf("App need repo or path %s", app.Name)
 		return errors.New(errMsg)
