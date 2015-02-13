@@ -61,7 +61,9 @@ func (plugin SeedPlugin) Run(cliConnection plugin.CliConnection, args []string) 
 
 		if c.Bool("c") {
 			err = seedRepo.DeleteApps()
+			fatalIf(err)
 
+			err = seedRepo.DeleteServices()
 			fatalIf(err)
 
 			err = seedRepo.DeleteSpaces()
@@ -74,6 +76,9 @@ func (plugin SeedPlugin) Run(cliConnection plugin.CliConnection, args []string) 
 			fatalIf(err)
 
 			err = seedRepo.CreateSpaces()
+			fatalIf(err)
+
+			err = seedRepo.CreateServices()
 			fatalIf(err)
 
 			err = seedRepo.CreateApps()
@@ -165,6 +170,36 @@ func (repo *SeedRepo) DeleteSpaces() error {
 			_, err := repo.conn.CliCommand("delete-space", space.Name, "-f")
 			if err != nil {
 				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (repo *SeedRepo) CreateServices() error {
+	for _, org := range repo.Manifest.Organizations {
+		for _, space := range org.Spaces {
+			repo.conn.CliCommand("target", "-o", org.Name, "-s", space.Name)
+			for _, service := range space.Services {
+				_, err := repo.conn.CliCommand("create-service", service.Service, service.Plan, service.Name)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (repo *SeedRepo) DeleteServices() error {
+	for _, org := range repo.Manifest.Organizations {
+		for _, space := range org.Spaces {
+			repo.conn.CliCommand("target", "-o", org.Name, "-s", space.Name)
+			for _, service := range space.Services {
+				_, err := repo.conn.CliCommand("delete-service", service.Name, "-f")
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
