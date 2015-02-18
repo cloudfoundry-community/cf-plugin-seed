@@ -1,12 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 
+	"github.com/cloudfoundry/cli/cf/configuration/config_helpers"
+	"github.com/cloudfoundry/cli/cf/configuration/core_config"
+	"github.com/cloudfoundry/cli/cf/models"
 	"github.com/cloudfoundry/cli/plugin"
 	"github.com/codegangsta/cli"
 	"gopkg.in/yaml.v2"
@@ -215,6 +220,14 @@ func (repo *SeedRepo) CreateApps() error {
 				if err != nil {
 					return err
 				}
+				repo.GetAppInfo(app)
+				emptyServiceBroker := ServiceBroker{}
+				if app.ServiceBroker != emptyServiceBroker {
+					err := repo.SetAppAsService(app)
+					if err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
@@ -237,7 +250,7 @@ func (repo *SeedRepo) DeleteApps() error {
 }
 
 //DeleteApp deletes a single app
-func (repo *SeedRepo) DeleteApp(app App) error {
+func (repo *SeedRepo) DeleteApp(app DeployApp) error {
 
 	_, err := repo.conn.CliCommand("delete", app.Name, "-f", "-r")
 	if err != nil {
@@ -248,7 +261,7 @@ func (repo *SeedRepo) DeleteApp(app App) error {
 }
 
 //DeployApp deploys a single app
-func (repo *SeedRepo) DeployApp(app App) error {
+func (repo *SeedRepo) DeployApp(app DeployApp) error {
 	args := []string{"push", app.Name}
 	if app.Repo != "" {
 		wd, _ := os.Getwd()
@@ -300,4 +313,25 @@ func (repo *SeedRepo) DeployApp(app App) error {
 	repo.conn.CliCommand(args...)
 
 	return nil
+}
+
+func (repo *SeedRepo) SetAppAsService(app DeployApp) error {
+	return nil
+}
+
+func (repo *SeedRepo) GetAppInfo(app DeployApp) models.Application {
+	confRepo := core_config.NewRepositoryFromFilepath(config_helpers.DefaultFilePath(), fatalIf)
+	spaceGuid := confRepo.SpaceFields().Guid
+
+	appsQuery := fmt.Sprintf("/v2/spaces/%v/summary", spaceGuid)
+	cmd := []string{"curl", appsQuery}
+	fmt.Println(cmd)
+	output, _ := repo.conn.CliCommandWithoutTerminalOutput(cmd...)
+	res := &SpaceSummary{}
+	fmt.Println(output)
+	json.Unmarshal([]byte(strings.Join(output, "")), &res)
+
+	fmt.Println(res)
+
+	return models.Application{}
 }

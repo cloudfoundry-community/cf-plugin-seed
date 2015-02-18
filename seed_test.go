@@ -77,9 +77,31 @@ func TestCreateApps(t *testing.T) {
 	Convey("Error Creating Apps", t, func() {
 		cliConn.CliCommandReturns([]string{}, errors.New("Error Creating Apps"))
 		repo.Manifest.Organizations[0].Spaces[0].Apps =
-			append(repo.Manifest.Organizations[0].Spaces[0].Apps, App{Name: "foo"})
+			append(repo.Manifest.Organizations[0].Spaces[0].Apps, DeployApp{Name: "foo"})
 		err := repo.CreateApps()
 		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestSetAppAsService(t *testing.T) {
+	setup()
+	repo.ReadManifest()
+	Convey("Create Services", t, func() {
+		app := DeployApp{Name: "foo"}
+		err := repo.SetAppAsService(app)
+		So(err, ShouldBeNil)
+		So(cliConn.CliCommandCallCount(), ShouldEqual, 0)
+	})
+}
+
+func TestGetAppInfo(t *testing.T) {
+	setup()
+	repo.ReadManifest()
+	Convey("Get App Info", t, func() {
+		app := DeployApp{Name: "foo"}
+		err := repo.GetAppInfo(app)
+		So(err, ShouldBeNil)
+		So(cliConn.CliCommandCallCount(), ShouldEqual, 1)
 	})
 }
 
@@ -89,24 +111,24 @@ func TestDeployApps(t *testing.T) {
 	os.Chdir(tempDir)
 	fmt.Println(tempDir)
 	Convey("Deploy App with repo not cloned", t, func() {
-		app := App{Name: "testApp", Repo: "https://github.com/cloudfoundry-community/cf-env"}
+		app := DeployApp{Name: "testApp", Repo: "https://github.com/cloudfoundry-community/cf-env"}
 		err := repo.DeployApp(app)
 		So(err, ShouldBeNil)
 	})
 	Convey("Deploy App with repo cloned", t, func() {
-		app := App{Name: "testApp", Repo: "https://github.com/cloudfoundry-community/cf-env"}
+		app := DeployApp{Name: "testApp", Repo: "https://github.com/cloudfoundry-community/cf-env"}
 		err := repo.DeployApp(app)
 		So(err, ShouldBeNil)
 	})
 	Convey("Deploy App with path", t, func() {
-		app := App{Name: "testApp", Path: "test/path"}
+		app := DeployApp{Name: "testApp", Path: "test/path"}
 		err := repo.DeployApp(app)
 		args := cliConn.CliCommandArgsForCall(2)
 		So(err, ShouldBeNil)
 		So(args, ShouldResemble, []string{"push", "testApp", "-p", "test/path"})
 	})
 	Convey("Deploy App with disk, memory, instances, domain, hostname, and buildpack", t, func() {
-		app := App{Name: "testApp",
+		app := DeployApp{Name: "testApp",
 			Path:      "test/path",
 			Disk:      "1g",
 			Memory:    "256m",
@@ -127,7 +149,7 @@ func TestDeployApps(t *testing.T) {
 			"-b", "my.awesome.buildpack"})
 	})
 	Convey("Deploy App with no repo or path", t, func() {
-		app := App{Name: "testApp"}
+		app := DeployApp{Name: "testApp"}
 		err := repo.DeployApp(app)
 		So(err, ShouldNotBeNil)
 	})
