@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 
@@ -44,9 +43,19 @@ func TestOrganizations(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(cliConn.CliCommandCallCount(), ShouldEqual, 2)
 	})
+	Convey("Delete Organizations", t, func() {
+		err := repo.DeleteOrganizations()
+		So(err, ShouldBeNil)
+		So(cliConn.CliCommandCallCount(), ShouldEqual, 4)
+	})
 	Convey("Error Creating Organizations", t, func() {
 		cliConn.CliCommandReturns([]string{}, errors.New("Error Creating Org"))
 		err := repo.CreateOrganizations()
+		So(err, ShouldNotBeNil)
+	})
+	Convey("Error Deleting Organizations", t, func() {
+		cliConn.CliCommandReturns([]string{}, errors.New("Error Deleting Org"))
+		err := repo.DeleteOrganizations()
 		So(err, ShouldNotBeNil)
 	})
 }
@@ -59,9 +68,19 @@ func TestSpaces(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(cliConn.CliCommandCallCount(), ShouldEqual, 5)
 	})
+	Convey("Delete Spaces", t, func() {
+		err := repo.DeleteSpaces()
+		So(err, ShouldBeNil)
+		So(cliConn.CliCommandCallCount(), ShouldEqual, 10)
+	})
 	Convey("Error Creating Spaces", t, func() {
 		cliConn.CliCommandReturns([]string{}, errors.New("Error Creating Space"))
 		err := repo.CreateSpaces()
+		So(err, ShouldNotBeNil)
+	})
+	Convey("Error Deleting Spaces", t, func() {
+		cliConn.CliCommandReturns([]string{}, errors.New("Error Deleting Space"))
+		err := repo.DeleteSpaces()
 		So(err, ShouldNotBeNil)
 	})
 }
@@ -74,11 +93,46 @@ func TestCreateApps(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(cliConn.CliCommandCallCount(), ShouldEqual, 7)
 	})
+	Convey("Delete Apps", t, func() {
+		err := repo.DeleteApps()
+		So(err, ShouldBeNil)
+		So(cliConn.CliCommandCallCount(), ShouldEqual, 14)
+	})
 	Convey("Error Creating Apps", t, func() {
 		cliConn.CliCommandReturns([]string{}, errors.New("Error Creating Apps"))
 		repo.Manifest.Organizations[0].Spaces[0].Apps =
 			append(repo.Manifest.Organizations[0].Spaces[0].Apps, App{Name: "foo"})
 		err := repo.CreateApps()
+		So(err, ShouldNotBeNil)
+	})
+	Convey("Error Delete Apps", t, func() {
+		cliConn.CliCommandReturns([]string{}, errors.New("Error Deleting Apps"))
+		err := repo.DeleteApps()
+		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestCreateServices(t *testing.T) {
+	setup()
+	repo.ReadManifest()
+	Convey("Create Services", t, func() {
+		err := repo.CreateServices()
+		So(err, ShouldBeNil)
+		So(cliConn.CliCommandCallCount(), ShouldEqual, 5)
+	})
+	Convey("Delete Services", t, func() {
+		err := repo.DeleteServices()
+		So(err, ShouldBeNil)
+		So(cliConn.CliCommandCallCount(), ShouldEqual, 10)
+	})
+	Convey("Error Creating Services", t, func() {
+		cliConn.CliCommandReturns([]string{}, errors.New("Error Creating Services"))
+		err := repo.CreateServices()
+		So(err, ShouldNotBeNil)
+	})
+	Convey("Error Deleting Services", t, func() {
+		cliConn.CliCommandReturns([]string{}, errors.New("Error Deleting Services"))
+		err := repo.DeleteServices()
 		So(err, ShouldNotBeNil)
 	})
 }
@@ -87,7 +141,6 @@ func TestDeployApps(t *testing.T) {
 	setup()
 	tempDir := os.TempDir()
 	os.Chdir(tempDir)
-	fmt.Println(tempDir)
 	Convey("Deploy App with repo not cloned", t, func() {
 		app := App{Name: "testApp", Repo: "https://github.com/cloudfoundry-community/cf-env"}
 		err := repo.DeployApp(app)

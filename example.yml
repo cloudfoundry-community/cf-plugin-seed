@@ -11,7 +11,15 @@ organizations:
         memory: 256m
         disk: 1g
         instances: 2
+      services:
+      - name: foo
+        service: postgresql
+        plan: free
+      - name: bar
+        service: mysql
+        plan: free
     - name: space2
+
   - name: org2
     spaces:
       - name: space3
