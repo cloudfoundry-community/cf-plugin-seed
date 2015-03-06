@@ -19,7 +19,6 @@ type Space struct {
 	Services []Service
 }
 
-<<<<<<< HEAD
 type SpaceSummary struct {
 	Guid string
 	Name string
@@ -27,9 +26,6 @@ type SpaceSummary struct {
 }
 
 type DeployApp struct {
-=======
-type App struct {
->>>>>>> a84b543cb636534eeff74580b4b5f7e8fdeb8b43
 	Name          string
 	Repo          string        `yaml:",omitempty"`
 	Path          string        `yaml:",omitempty"`
@@ -55,4 +51,5 @@ type Service struct {
 	Name    string
 	Service string `yaml:",omitempty"`
 	Plan    string `yaml:",omitempty"`
+	Org     string `yaml:",omitempty"`
 }

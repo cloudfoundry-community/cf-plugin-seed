@@ -316,7 +316,41 @@ func (repo *SeedRepo) DeployApp(app DeployApp) error {
 }
 
 func (repo *SeedRepo) SetAppAsService(app DeployApp) error {
+	err := repo.CreateServiceBroker(app)
+	if err != nil {
+		return err
+	}
+	err = repo.EnableServiceAccess(app)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func (repo *SeedRepo) EnableServiceAccess(app DeployApp) error {
+	for _, service := range app.ServiceAccess {
+		args := []string{"enable-service-access", service.Name}
+		if service.Plan != "" {
+			args = append(args, "-p", service.Plan)
+		}
+		if service.Org != "" {
+			args = append(args, "-o", service.Org)
+		}
+		repo.conn.CliCommand(args...)
+	}
+	return nil
+}
+
+func (repo *SeedRepo) CreateServiceBroker(app DeployApp) error {
+	appInfo := repo.GetAppInfo(app)
+	if len(appInfo.Routes) > 0 {
+		repo.conn.CliCommand("create-service-broker", app.ServiceBroker.Name,
+			app.ServiceBroker.Username, app.ServiceBroker.Password,
+			appInfo.Routes[0].URL())
+		return nil
+	}
+	errMsg := fmt.Sprintf("App need a route %s", app.Name)
+	return errors.New(errMsg)
 }
 
 func (repo *SeedRepo) GetAppInfo(app DeployApp) models.Application {
@@ -325,13 +359,15 @@ func (repo *SeedRepo) GetAppInfo(app DeployApp) models.Application {
 
 	appsQuery := fmt.Sprintf("/v2/spaces/%v/summary", spaceGuid)
 	cmd := []string{"curl", appsQuery}
-	fmt.Println(cmd)
 	output, _ := repo.conn.CliCommandWithoutTerminalOutput(cmd...)
 	res := &SpaceSummary{}
-	fmt.Println(output)
 	json.Unmarshal([]byte(strings.Join(output, "")), &res)
 
-	fmt.Println(res)
+	for _, spaceApp := range res.Apps {
+		if app.Name == spaceApp.Name {
+			return spaceApp
+		}
+	}
 
 	return models.Application{}
 }

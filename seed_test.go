@@ -137,14 +137,34 @@ func TestCreateServices(t *testing.T) {
 	})
 }
 
-func TestSetAppAsService(t *testing.T) {
+// func TestSetAppAsService(t *testing.T) {
+// 	setup()
+// 	repo.ReadManifest()
+// 	Convey("Create Services", t, func() {
+// 		app := DeployApp{Name: "foo"}
+// 		err := repo.SetAppAsService(app)
+// 		So(err, ShouldBeNil)
+// 		So(cliConn.CliCommandCallCount(), ShouldEqual, 0)
+// 	})
+// }
+
+func TestCreateServiceBroker(t *testing.T) {
 	setup()
 	repo.ReadManifest()
-	Convey("Create Services", t, func() {
-		app := DeployApp{Name: "foo"}
-		err := repo.SetAppAsService(app)
+	Convey("Create Service Broker", t, func() {
+		cliConn.CliCommandWithoutTerminalOutputReturns([]string{appSummary}, nil)
+		app := DeployApp{Name: "app3"}
+		err := repo.CreateServiceBroker(app)
 		So(err, ShouldBeNil)
-		So(cliConn.CliCommandCallCount(), ShouldEqual, 0)
+		So(cliConn.CliCommandCallCount(), ShouldEqual, 1)
+		So(cliConn.CliCommandWithoutTerminalOutputCallCount(), ShouldEqual, 1)
+	})
+
+	Convey("No route for service broker", t, func() {
+		cliConn.CliCommandWithoutTerminalOutputReturns([]string{appSummaryNoRoute}, nil)
+		app := DeployApp{Name: "app3"}
+		err := repo.CreateServiceBroker(app)
+		So(err, ShouldNotBeNil)
 	})
 }
 
@@ -152,10 +172,11 @@ func TestGetAppInfo(t *testing.T) {
 	setup()
 	repo.ReadManifest()
 	Convey("Get App Info", t, func() {
-		app := DeployApp{Name: "foo"}
-		err := repo.GetAppInfo(app)
-		So(err, ShouldBeNil)
-		So(cliConn.CliCommandCallCount(), ShouldEqual, 1)
+		cliConn.CliCommandWithoutTerminalOutputReturns([]string{appSummary}, nil)
+		app := DeployApp{Name: "app3"}
+		spaceApp := repo.GetAppInfo(app)
+		So(spaceApp.Name, ShouldEqual, "app3")
+		So(cliConn.CliCommandWithoutTerminalOutputCallCount(), ShouldEqual, 1)
 	})
 }
 
