@@ -24,7 +24,7 @@ organizations:
     spaces:
       - name: space3
         apps:
-          - name: app3
-            path: "blah"
-          - name: app4
-            path: "foo"
+        - name: app3
+          path: "blah"
+        - name: app4
+          path: "foo"

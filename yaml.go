@@ -15,7 +15,7 @@ type Organization struct {
 
 type Space struct {
 	Name     string
-	Apps     []DeployApp
+	Apps     []deployApp
 	Services []Service
 }
 
@@ -25,7 +25,7 @@ type SpaceSummary struct {
 	Apps []models.Application
 }
 
-type DeployApp struct {
+type deployApp struct {
 	Name          string
 	Repo          string        `yaml:",omitempty"`
 	Path          string        `yaml:",omitempty"`
@@ -51,4 +51,5 @@ type Service struct {
 	Name    string
 	Service string `yaml:",omitempty"`
 	Plan    string `yaml:",omitempty"`
+	Org     string `yaml:",omitempty"`
 }

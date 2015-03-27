@@ -1,0 +1,9 @@
+applications:
+- name: app4
+  memory: 256M
+  env:
+    BASE_GUID: 5b234f12-d23f-11e4-9182-ab3cc7b467ee
+    CREDENTIALS: '{"port": "4000", "host": "1.2.3.4"}'
+    SERVICE_NAME: wssb
+    SERVICE_PLAN_NAME: shared
+    TAGS: simple,shared
