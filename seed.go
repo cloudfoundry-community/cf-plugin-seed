@@ -67,31 +67,38 @@ func (plugin SeedPlugin) Run(cliConnection plugin.CliConnection, args []string) 
 		fatalIf(err)
 
 		if c.Bool("c") {
-			err = seedRepo.deleteApps()
-			fatalIf(err)
-
-			err = seedRepo.deleteServices()
-			fatalIf(err)
-
-			err = seedRepo.deleteSpaces()
-			fatalIf(err)
-
-			err = seedRepo.deleteOrganizations()
-			fatalIf(err)
+			err = seedRepo.cleanup()
 		} else {
-			err = seedRepo.createOrganizations()
-			fatalIf(err)
-
-			err = seedRepo.createSpaces()
-			fatalIf(err)
-
-			err = seedRepo.createApps()
-			fatalIf(err)
-
-			err = seedRepo.createServices()
-			fatalIf(err)
+			err = seedRepo.deploy()
 		}
+		fatalIf(err)
 	}
+
+	//			err = seedRepo.deleteApps()
+	//			fatalIf(err)
+
+	//			err = seedRepo.deleteServices()
+	//			fatalIf(err)
+
+	//			err = seedRepo.deleteSpaces()
+	//			fatalIf(err)
+
+	//			err = seedRepo.deleteOrganizations()
+	//			fatalIf(err)
+	//		} else {
+	//			err = seedRepo.createOrganizations()
+	//			fatalIf(err)
+
+	//			err = seedRepo.createSpaces()
+	//			fatalIf(err)
+
+	//			err = seedRepo.createApps()
+	//			fatalIf(err)
+
+	//			err = seedRepo.createServices()
+	//			fatalIf(err)
+	//		}
+	//	}
 	app.Run(args)
 }
 
@@ -145,18 +152,32 @@ func (repo *SeedRepo) readManifest() error {
 	return nil
 }
 
-func (repo *SeedRepo) createOrganizations() error {
-	for _, org := range repo.Manifest.Organizations {
+func (repo *SeedRepo) deploy() error {
+	for o, org := range repo.Manifest.Organizations {
+		org.Name = o
 		_, err := conn.CliCommand("create-org", org.Name)
 		if err != nil {
 			return err
+		}
+		conn.CliCommand("target", "-o", org.Name)
+		for s, space := range org.Spaces {
+			space.Name = s
+			space.org = org
+			space.create()
 		}
 	}
 	return nil
 }
 
-func (repo *SeedRepo) deleteOrganizations() error {
-	for _, org := range repo.Manifest.Organizations {
+func (repo *SeedRepo) cleanup() error {
+	for o, org := range repo.Manifest.Organizations {
+		conn.CliCommand("target", "-o", org.Name)
+		org.Name = o
+		for s, space := range org.Spaces {
+			space.Name = s
+			space.org = org
+			space.delete()
+		}
 		_, err := conn.CliCommand("delete-org", org.Name, "-f")
 		if err != nil {
 			return err
@@ -165,110 +186,106 @@ func (repo *SeedRepo) deleteOrganizations() error {
 	return nil
 }
 
-func (repo *SeedRepo) createSpaces() error {
-	for _, org := range repo.Manifest.Organizations {
-		conn.CliCommand("target", "-o", org.Name)
-		for _, space := range org.Spaces {
-			_, err := conn.CliCommand("create-space", space.Name)
-			if err != nil {
-				return err
-			}
+func (space *Space) create() error {
+	_, err := conn.CliCommand("create-space", space.Name)
+	if err != nil {
+		return err
+	}
+	conn.CliCommand("target", "-o", space.org.Name, "-s", space.Name)
+	for a, app := range space.Apps {
+		app.Name = a
+		app.space = space
+		err = app.create()
+		if err != nil {
+			return err
+		}
+	}
+	for s, svc := range space.Services {
+		svc.Name = s
+		svc.space = space
+		err = svc.create()
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (repo *SeedRepo) deleteSpaces() error {
-	for _, org := range repo.Manifest.Organizations {
-		conn.CliCommand("target", "-o", org.Name)
-		for _, space := range org.Spaces {
-			_, err := conn.CliCommand("delete-space", space.Name, "-f")
-			if err != nil {
-				return err
-			}
+func (space *Space) delete() error {
+	conn.CliCommand("target", "-o", space.org.Name, "-s", space.Name)
+	for s, svc := range space.Services {
+		svc.Name = s
+		svc.space = space
+		err := svc.delete()
+		if err != nil {
+			return err
+		}
+	}
+	for a, app := range space.Apps {
+		app.Name = a
+		app.space = space
+		err := app.delete()
+		if err != nil {
+			return err
+		}
+	}
+	conn.CliCommand("target", "-o", space.org.Name)
+	_, err := conn.CliCommand("delete-space", space.Name, "-f")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (service *Service) create() error {
+	_, err := conn.CliCommand("create-service", service.Service, service.Plan, service.Name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (service *Service) delete() error {
+	_, err := conn.CliCommand("delete-service", service.Name, "-f")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (app *App) create() error {
+	err := app.deployApp()
+	if err != nil {
+		return err
+	}
+	emptyServiceBroker := ServiceBroker{}
+	if app.ServiceBroker != emptyServiceBroker {
+		fmt.Println("setting app as service")
+		err := app.setAsService()
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (repo *SeedRepo) createServices() error {
-	for _, org := range repo.Manifest.Organizations {
-		for _, space := range org.Spaces {
-			conn.CliCommand("target", "-o", org.Name, "-s", space.Name)
-			for _, service := range space.Services {
-				_, err := conn.CliCommand("create-service", service.Service, service.Plan, service.Name)
-				if err != nil {
-					return err
-				}
-			}
+func (app *App) delete() error {
+	emptyServiceBroker := ServiceBroker{}
+	if app.ServiceBroker != emptyServiceBroker {
+		err := app.unsetAsService()
+		if err != nil {
+			return err
 		}
 	}
-	return nil
-}
-
-func (repo *SeedRepo) deleteServices() error {
-	for _, org := range repo.Manifest.Organizations {
-		for _, space := range org.Spaces {
-			conn.CliCommand("target", "-o", org.Name, "-s", space.Name)
-			for _, service := range space.Services {
-				_, err := conn.CliCommand("delete-service", service.Name, "-f")
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (repo *SeedRepo) createApps() error {
-	for _, org := range repo.Manifest.Organizations {
-		for _, space := range org.Spaces {
-			conn.CliCommand("target", "-o", org.Name, "-s", space.Name)
-			for _, app := range space.Apps {
-				err := repo.deployApp(app)
-				if err != nil {
-					return err
-				}
-				emptyServiceBroker := ServiceBroker{}
-				if app.ServiceBroker != emptyServiceBroker {
-					fmt.Println("setting app as service")
-					err := repo.setAppAsService(app)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (repo *SeedRepo) deleteApps() error {
-	for _, org := range repo.Manifest.Organizations {
-		for _, space := range org.Spaces {
-			conn.CliCommand("target", "-o", org.Name, "-s", space.Name)
-			for _, app := range space.Apps {
-				emptyServiceBroker := ServiceBroker{}
-				if app.ServiceBroker != emptyServiceBroker {
-					err := repo.deleteAppAsService(app)
-					if err != nil {
-						return err
-					}
-				}
-				err := repo.deleteApp(app)
-				if err != nil {
-					return err
-				}
-			}
-		}
+	err := app.deleteApp()
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 //DeleteApp deletes a single app
-func (repo *SeedRepo) deleteApp(app App) error {
-
+func (app *App) deleteApp() error {
 	_, err := conn.CliCommand("delete", app.Name, "-f", "-r")
 	if err != nil {
 		return err
@@ -278,7 +295,11 @@ func (repo *SeedRepo) deleteApp(app App) error {
 }
 
 //deployApp deploys a single app
-func (repo *SeedRepo) deployApp(app App) error {
+func (app *App) deployApp() error {
+	//	for _, dep := range app.Requires {
+	//		objType, name = strings.SplitN(dep, '.', 2)
+	//	}
+
 	args := []string{"push", app.Name}
 	if app.Repo != "" {
 		wd, _ := os.Getwd()
@@ -333,19 +354,19 @@ func (repo *SeedRepo) deployApp(app App) error {
 	return nil
 }
 
-func (repo *SeedRepo) setAppAsService(app App) error {
-	appInfo := repo.getAppInfo(app)
-	appRoute, err := repo.firstAppRoute(appInfo)
+func (app *App) setAsService() error {
+	appInfo := getAppInfo(app)
+	appRoute, err := firstAppRoute(appInfo)
 	if err != nil {
 		return err
 	}
 	app.ServiceBroker.Url = "https://" + appRoute
-	err = repo.createServiceBroker(app.ServiceBroker)
+	err = createServiceBroker(app.ServiceBroker)
 	if err != nil {
 		return err
 	}
 	for _, service := range app.ServiceAccess {
-		err := repo.enableServiceAccess(service)
+		err := enableServiceAccess(service)
 		if err != nil {
 			return err
 		}
@@ -353,37 +374,37 @@ func (repo *SeedRepo) setAppAsService(app App) error {
 	return nil
 }
 
-func (repo *SeedRepo) deleteAppAsService(app App) error {
-	appInfo := repo.getAppInfo(app)
-	appRoute, err := repo.firstAppRoute(appInfo)
+func (app *App) unsetAsService() error {
+	appInfo := getAppInfo(app)
+	appRoute, err := firstAppRoute(appInfo)
 	if err != nil {
 		return err
 	}
 	app.ServiceBroker.Url = "https://" + appRoute
 	for _, service := range app.ServiceAccess {
-		err := repo.disableServiceAccess(service)
+		err := disableServiceAccess(service)
 		if err != nil {
 			return err
 		}
 	}
-	err = repo.deleteServiceBroker(app.ServiceBroker)
+	err = deleteServiceBroker(app.ServiceBroker)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (repo *SeedRepo) getAppInfo(app App) *cftype.RetrieveAParticularApp {
+func getAppInfo(app *App) *cftype.RetrieveAParticularApp {
 	confRepo := core_config.NewRepositoryFromFilepath(config_helpers.DefaultFilePath(), fatalIf)
 	spaceGUID := confRepo.SpaceFields().Guid
 
-	appGUID := repo.findAppGUID(spaceGUID, app.Name)
+	appGUID := findAppGUID(spaceGUID, app.Name)
 
-	appInfo := repo.findApp(appGUID)
+	appInfo := findApp(appGUID)
 	return appInfo
 }
 
-func (repo *SeedRepo) firstAppRoute(app *cftype.RetrieveAParticularApp) (fullRoute string, err error) {
+func firstAppRoute(app *cftype.RetrieveAParticularApp) (fullRoute string, err error) {
 	routes := &cftype.ListAllRoutesForTheApp{}
 	cmd := []string{"curl", app.Entity.RoutesURL}
 	output, _ := conn.CliCommandWithoutTerminalOutput(cmd...)
@@ -405,7 +426,7 @@ func (repo *SeedRepo) firstAppRoute(app *cftype.RetrieveAParticularApp) (fullRou
 	return domain.Entity.Name, nil
 }
 
-func (repo *SeedRepo) findApp(appGUID string) (app *cftype.RetrieveAParticularApp) {
+func findApp(appGUID string) (app *cftype.RetrieveAParticularApp) {
 	app = &cftype.RetrieveAParticularApp{}
 	cmd := []string{"curl", fmt.Sprintf("/v2/apps/%s", appGUID)}
 	output, _ := conn.CliCommandWithoutTerminalOutput(cmd...)
@@ -413,7 +434,7 @@ func (repo *SeedRepo) findApp(appGUID string) (app *cftype.RetrieveAParticularAp
 	return app
 }
 
-func (repo *SeedRepo) findAppGUID(spaceGUID string, appName string) string {
+func findAppGUID(spaceGUID string, appName string) string {
 	appQuery := fmt.Sprintf("/v2/spaces/%v/apps?q=name:%v&inline-relations-depth=1", spaceGUID, appName)
 	cmd := []string{"curl", appQuery}
 
@@ -424,19 +445,19 @@ func (repo *SeedRepo) findAppGUID(spaceGUID string, appName string) string {
 	return res.Resources[0].Resource.Metadata.Guid
 }
 
-func (repo *SeedRepo) createServiceBroker(broker ServiceBroker) error {
+func createServiceBroker(broker ServiceBroker) error {
 	args := []string{"create-service-broker", broker.Name, broker.Username, broker.Password, broker.Url}
 	_, err := conn.CliCommand(args...)
 	return err
 }
 
-func (repo *SeedRepo) deleteServiceBroker(broker ServiceBroker) error {
+func deleteServiceBroker(broker ServiceBroker) error {
 	args := []string{"delete-service-broker", broker.Name, "-f"}
 	_, err := conn.CliCommand(args...)
 	return err
 }
 
-func (repo *SeedRepo) enableServiceAccess(service Service) error {
+func enableServiceAccess(service Service) error {
 	args := []string{"enable-service-access", service.Service}
 	if service.Plan != "" {
 		args = append(args, "-p", service.Plan)
@@ -448,7 +469,7 @@ func (repo *SeedRepo) enableServiceAccess(service Service) error {
 	return err
 }
 
-func (repo *SeedRepo) disableServiceAccess(service Service) error {
+func disableServiceAccess(service Service) error {
 	args := []string{"disable-service-access", service.Service}
 	if service.Plan != "" {
 		args = append(args, "-p", service.Plan)
