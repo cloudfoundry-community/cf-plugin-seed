@@ -19,7 +19,14 @@ organizations:
           service_access:
             - name: wssb
               service: wssb
+          requires:
+          - services.postgresql
         services:
         - name: wssb-service
           service: wssb
           plan: shared
+          requires:
+          - apps.app5
+        services:
+        - name: postgresql
+          service: postgresql

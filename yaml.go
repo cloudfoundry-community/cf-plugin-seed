@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/cloudfoundry/cli/cf/models"
-)
-
 type SeederManifest struct {
 	Organizations []Organization
 }
@@ -15,17 +11,11 @@ type Organization struct {
 
 type Space struct {
 	Name     string
-	Apps     []deployApp
+	Apps     []App
 	Services []Service
 }
 
-type SpaceSummary struct {
-	Guid string
-	Name string
-	Apps []models.Application
-}
-
-type deployApp struct {
+type App struct {
 	Name          string
 	Repo          string        `yaml:",omitempty"`
 	Path          string        `yaml:",omitempty"`
