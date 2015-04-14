@@ -65,10 +65,6 @@ func (self *App) delete() error {
 
 //deployApp deploys a single app
 func (self *App) deploy() error {
-	//	for _, dep := range self.Requires {
-	//		objType, name = strings.SplitN(dep, '.', 2)
-	//	}
-
 	args := []string{"push", self.Name}
 	if self.Repo != "" {
 		wd, _ := os.Getwd()

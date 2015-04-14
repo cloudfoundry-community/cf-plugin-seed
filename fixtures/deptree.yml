@@ -1,0 +1,26 @@
+---
+orgs:
+  testOrg:
+    spaces:
+      testSpace:
+        apps:
+          app1:
+            path: foo
+            requires:
+              services:
+              - appAsSvc
+          pgApp:
+            path: bar
+            requires:
+              services:
+              - pg
+        services:
+          pg:
+            service: postgresql
+            plan: free
+          appAsSvc:
+            service: app
+            plan: shared
+            requires:
+              apps:
+              - pgApp

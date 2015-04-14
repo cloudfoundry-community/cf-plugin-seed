@@ -1,0 +1,11 @@
+---
+orgs:
+  testOrg:
+    spaces:
+      testSpace:
+        apps:
+          myApp:
+            path: foo
+            requires:
+              services:
+              - postgresql

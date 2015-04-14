@@ -1,0 +1,11 @@
+---
+orgs:
+  myOrg:
+    spaces:
+      mySpace:
+        apps:
+          myApp:
+            path: foo
+            requires:
+              apps:
+              - myApp
