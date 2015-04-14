@@ -33,7 +33,7 @@ func TestReadManifest(t *testing.T) {
 	Convey("Read good manifest", t, func() {
 		err := test_repo.readManifest()
 		So(err, ShouldBeNil)
-		org := test_repo.Manifest.Orgs["testOrg"]
+		org := test_repo.Manifest.Organizations["testOrg"]
 		space := org.Spaces["testSpace"]
 		app := space.Apps["testApp"]
 		svc := space.Services["testSvc"]

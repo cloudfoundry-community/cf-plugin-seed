@@ -1,5 +1,5 @@
 ---
-orgs:
+organizations:
   org1:
     spaces:
       space1: {}

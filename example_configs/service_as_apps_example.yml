@@ -1,0 +1,33 @@
+---
+organizations:
+  org1:
+    spaces:
+      space1: {}
+      space2: {}
+
+  org2:
+    spaces:
+      space3:
+        apps:
+          app5:
+            repo: https://github.com/cloudfoundry-community/worlds-simplest-service-broker
+            manifest: manifests/wssb.yml
+            service_broker:
+              name: wssb
+              username: admin
+              password: admin
+            service_access:
+            - name: wssb
+              service: wssb
+            requires:
+              services:
+              - postgresql
+        services:
+          wssb-service:
+            service: wssb
+            plan: shared
+            requires:
+              apps:
+              - app5
+          postgresql:
+            service: postgresql

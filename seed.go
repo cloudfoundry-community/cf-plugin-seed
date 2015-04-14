@@ -15,7 +15,7 @@ import (
 var conn plugin.CliConnection
 
 type SeederManifest struct {
-	Orgs map[string]*Organization
+	Organizations map[string]*Organization
 }
 
 type Organization struct {
@@ -131,7 +131,7 @@ func (self *SeedRepo) readManifest() error {
 		return err
 	}
 
-	for o, org := range self.Manifest.Orgs {
+	for o, org := range self.Manifest.Organizations {
 		org.Name = o
 		for s, space := range org.Spaces {
 			space.Name = s
@@ -151,7 +151,7 @@ func (self *SeedRepo) readManifest() error {
 }
 
 func (self *SeedRepo) deploy() error {
-	for _, org := range self.Manifest.Orgs {
+	for _, org := range self.Manifest.Organizations {
 		_, err := conn.CliCommand("create-org", org.Name)
 		if err != nil {
 			return err
@@ -168,7 +168,7 @@ func (self *SeedRepo) deploy() error {
 }
 
 func (self *SeedRepo) cleanup() error {
-	for _, org := range self.Manifest.Orgs {
+	for _, org := range self.Manifest.Organizations {
 		conn.CliCommand("target", "-o", org.Name)
 		for _, space := range org.Spaces {
 			err := space.delete()

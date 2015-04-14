@@ -1,6 +1,6 @@
 # Overview
 
-Seed creates orgs, spaces, and pushes app. This plugin was created for automation of creating certain orgs, spaces, and apps. This is useful if you want to keep the consistency between different Cloud Foundry Environments. Future support should includes creation of users, services and basically anything in cf cli commands.
+Seed creates orgs, spaces, services, and pushes apps, to initialize a Cloud Foundry environment from a manifest file.  This is useful if you want to keep the consistency between different Cloud Foundry Environments, or automate the deployment of your Cloud Foundry Environment. Eventually, Future support will include basically anything in the cf cli commands.
 
 ## installation
 
@@ -22,27 +22,64 @@ Example of seed manifest.yml
 ```yaml
 ---
 organizations:
-  - name: org1
+  org1:
     spaces:
-    - name: space1
-      apps:
-      - name: app1
-        repo: https://github.com/cloudfoundry-community/cf-env
-      - name: app2
-      path: apps/app1
-      memory: 256m
-      disk: 1g
-      instances: 2
-    - name: space2
-  - name: org2
+      space1:
+        apps:
+          app1:
+            repo: https://github.com/cloudfoundry-community/cf-env
+          app2:
+            path: apps/app1
+            memory: 256m
+            disk: 1g
+            instances: 2
+      space2: {}
+  org2:
     spaces:
-    - name: space3
-      apps:
-      - name: app3
-        path: "blah"
-      - name: app4
-        path: "foo"
+      space3:
+        apps:
+          app3:
+            path: "blah"
+          app4:
+            path: "foo"
 
+```
+
+Example of a seed manifest.yml with services and dependencies:
+
+```yaml
+---
+organizations:
+  org1:
+    spaces:
+      space1: {}
+      space2: {}
+  org2:
+    spaces:
+      space3:
+        apps:
+          app5:
+            repo: https://github.com/cloudfoundry-community/worlds-simplest-service-broker
+            manifest: manifests/wssb.yml
+            service_broker:
+              name: wssb
+              username: admin
+              password: admin
+            service_access:
+            - name: wssb
+              service: wssb
+            requires:
+              services:
+              - postgresql
+        services:
+          wssb-service:
+            service: wssb
+            plan: shared
+            requires:
+              apps:
+              - app5
+          postgresql:
+            service: postgresql
 ```
 
 ## upgrading seed
