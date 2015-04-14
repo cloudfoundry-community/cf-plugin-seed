@@ -1,0 +1,12 @@
+---
+orgs:
+  org1:
+    spaces:
+      space1:
+        apps:
+          app1:
+            path: "tmp/app1"
+        services:
+          svc1:
+            plan:    myplan
+            service: myservice

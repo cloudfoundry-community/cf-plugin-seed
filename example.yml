@@ -1,30 +1,25 @@
 ---
-organizations:
-  - name: org1
-    spaces:
-    - name: space1
-      apps:
-      - name: app1
+org1:
+  space1:
+    apps:
+      app1:
         repo: https://github.com/cloudfoundry-community/cf-env
-      - name: app2
+      app2:
         path: apps/app1
         memory: 256m
         disk: 1g
         instances: 2
-      services:
-      - name: foo
+    services:
+      foo:
         service: postgresql
         plan: free
-      - name: bar
+      bar:
         service: mysql
-        plan: free
-    - name: space2
-
-  - name: org2
-    spaces:
-      - name: space3
-        apps:
-        - name: app3
-          path: "blah"
-        - name: app4
-          path: "foo"
+         plan: free
+  space2: {}
+org2:
+  space3:
+    app3:
+      path: "blah"
+    app4:
+      path: "foo"

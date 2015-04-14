@@ -1,0 +1,12 @@
+---
+orgs:
+  testOrg:
+    spaces:
+      testSpace:
+        apps:
+          testApp:
+            repo: https://github.com/cloudfoundry-community/cf-env
+        services:
+          testSvc:
+            service: postgresql
+            plan: free
