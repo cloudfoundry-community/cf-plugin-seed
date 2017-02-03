@@ -1,3 +1,7 @@
+# DEPRECATED
+
+This plugin is deprecated. If you are interested, check out https://github.com/cloudfoundry-community/cf-plugin-deploy
+
 # Overview
 
 Seed creates orgs, spaces, and pushes app. This plugin was created for automation of creating certain orgs, spaces, and apps. This is useful if you want to keep the consistency between different Cloud Foundry Environments. Future support should includes creation of users, services and basically anything in cf cli commands.
